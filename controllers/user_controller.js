@@ -1,54 +1,57 @@
 import asyncHandler from '../middlewares/asyncHandler.js';
-import user from '../models/user.js';
-import jwt from 'jsonwebtoken';
-import Jobs from '../models/jobs.js';
+import { Jobs } from '../models/jobs.js';
+import User from '../models/user.js';
+import { uploadOnCloudinary } from '../utils/cloudinary.js';
           
-// cloudinary.config({ 
-//   cloud_name: process.env.CLOUD_NAME,
-//   api_key: process.env.API_KEY,
-//   api_secret: process.env.API_SECRET
-// });
 
 const updateprofile=asyncHandler(async(req,res)=>{
-    const {token,firstName,lastName,about,mobileno,skills,experience,education,resume,imageurl,dob,address} = req.body;
+    const {firstName,lastName,about,mobileNo,skills,experience,education,dob,address} = req.body;
+    const user=req.user;
+    // console.log(req.file.resume[0].path);
+    console.log(firstName,lastName,about,mobileNo,skills,experience,education,dob,address);
     try {
-        // const imageresult = await cloudinary.uploader.upload(imageurl,{
-        // });
-        // const resumeresult=await cloudinary.uploader.upload(resume,{
-        // });
-        // console.log(imageresult.secure_url);
-        // console.log(resumeresult.secure_url);
-        if (!token || !firstName || !lastName || !about || !mobileno || !skills || !experience || !education) {
-            return res.status(400).json({msg: 'All fields are required'});
-        }
+        if (!firstName || !lastName || !about || !mobileNo || !skills || !experience || !education||!dob||!address) {
+            return res.status(400).json({msg: 'All fields are required'});}
         try {
-            if(token){
-                console.log("yaha tak aagaya");
-                const userId = jwt.verify(token, process.env.JWT_SECRET).id;
-                console.log("userId",userId);
-                const candidate = await user.findById(userId);
-                console.log("candidate", candidate);
-                if (!candidate) {
+                if (!user) {
                     return res.status(400).json({msg: 'user not found'});
                 }
-                candidate.firstName = firstName;
-                candidate.lastName = lastName;
-                candidate.profilePicture = imageurl;
-                candidate.about = about;
-                candidate.mobileno=mobileno;
-                candidate.skills = skills;
-                candidate.dob=dob;
-                candidate.address=address;
-                candidate.experience = experience;
-                candidate.education = education;
-                candidate.resume=resume;
-                await candidate.save();
-                console.log("candidate",candidate)
-                res.json({msg: 'profile updated successfully'});
-            }
-            else{
-                return res.status(400).json({msg: 'token not found'});
-            }
+                console.log(req.files?.imageurl[0].path);
+                const profilepath=await uploadOnCloudinary(req.files?.imageurl[0].path);
+                const resumepath=await uploadOnCloudinary(req.files?.resume[0].path);
+                // console.log("cloudinary profile image path is:-",profilepath.url);
+                // console.log("cloudinary resume image path is:-",resumepath.url);
+                // const newexperience=user.experience.concat(JSON.parse(experience));
+                const neweducation=user.education.concat(JSON.parse(education));
+                // const skillsnew=user.skills.concat(JSON.parse(skills));
+                // console.log(skillsnew);
+                console.log("experinece coming from request is :-",experience);
+                console.log("user experience is:-",user.experience);
+                const exp=[...user.experience,...JSON.parse(experience)];
+                console.log(typeof exp);
+                const newskills=[...user.skills,...JSON.parse(skills)];
+                console.log(newskills);
+                // console.log(newexperience);
+                // console.log(neweducation);
+                if(profilepath&&resumepath){
+                    user.firstName = firstName;
+                    user.lastName = lastName;
+                    user.profilePicture = profilepath.url;
+                    user.about = about;
+                    user.mobileno=mobileNo;
+                    user.skills = newskills;
+                    user.dob=dob;
+                    user.address=address;
+                    user.experience =exp;
+                    user.education = neweducation;
+                    user.userResume=resumepath.url;
+                    await user.save();
+                    // console.log("candidate",user);
+                    res.json({msg: 'profile updated successfully'});
+                }
+                else{
+                    console.log("cloudinary pe nhi gaya");
+                }
         }
         catch (err) {
             return res.status(500).json({msg: err.message});
@@ -63,7 +66,7 @@ const appliedjobs=asyncHandler(async(req,res)=>{
     const {userid}=req.body;
     // console.log(userid);
     try {
-        const olduser = await user.findById(userid).populate({
+        const olduser = await User.findById(userid).populate({
             path: 'applied',
             model: 'Jobs'
         });
@@ -83,7 +86,7 @@ const appliedjobs=asyncHandler(async(req,res)=>{
 const applyforjob=asyncHandler(async(req,res)=>{
     try {
         const { jobId ,userId} = req.body;
-        const user = await user.findById(userId);
+        const user = await User.findById(userId);
         if (!user) {
           return res.status(404).json({ message: 'User not found' });
         }

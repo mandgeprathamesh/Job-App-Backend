@@ -50,10 +50,5 @@ const recruiterSchema = new Schema({
     }
 );
 
-recruiterSchema.pre("save", async function () {
-    if (!this.isModified) return;
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-  });
-
-export default mongoose.model('Recruiter', recruiterSchema);
+const Recruiter= mongoose.model('Recruiter', recruiterSchema);
+export default Recruiter;

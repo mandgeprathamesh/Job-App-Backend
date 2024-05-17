@@ -1,54 +1,61 @@
 import asyncHandler from '../middlewares/asyncHandler.js';
-import recruiter from '../models/recruiter.js';
-import Jobs from '../models/jobs.js';
+import {Jobs} from '../models/jobs.js';
+import { uploadOnCloudinary } from '../utils/cloudinary.js';
 
 const updateprofile=asyncHandler(async(req,res)=>{
     const {
-        token,
-        username,
-        email,
-        password,
         firstName,
         lastName,
         currentPosi,
         about,
         company,
         contact,
-        profilePicture
     } = req.body;
+
+    // console.log(firstName,lastName,currentPosi,about,company,contact);
 
     try {
         
-        if (!token || !username || !email || !password || !firstName || !lastName || !currentPosi || !about || !company || !contact) {
+        if (!firstName || !lastName || !currentPosi || !about || !company || !contact) {
             return res.status(400).json({ msg: 'All fields are required' });
         }
 
-        const recruiterId = jwt.verify(token, process.env.JWT_SECRET).id;
-        const recruiterone = await recruiter.findById(recruiterId);
-        if (!recruiterone) {
+        const recruiter = req.user;
+        console.log(recruiter);
+        if (!recruiter){
             return res.status(404).json({ msg: 'Recruiter not found' });
         }
 
-        recruiterone.firstName = firstName;
-        recruiterone.lastName = lastName;
-        recruiterone.currentPosi = currentPosi;
-        recruiterone.about = about;
-        recruiterone.company = company;
-        recruiterone.contact = contact;
-        recruiterone.profilePicture = profilePicture;
+        const profilepicupload=await uploadOnCloudinary(req.files?.profilePicture[0].path);
+        console.log(profilepicupload.url);
 
-        await recruiterone.save();
-        return res.json({ msg: 'Profile updated successfully' });
+        if(profilepicupload){
+            console.log("update ke andar aagaya");
+            recruiter.firstName = firstName;
+            recruiter.lastName = lastName;
+            recruiter.currentPosi = currentPosi;
+            recruiter.about = about;
+            recruiter.company = company;
+            recruiter.contact = contact;
+            recruiter.profilePicture = profilepicupload.url;
+            await recruiter.save();
+            return res.json({ msg: 'Profile updated successfully' });
+        }
+
+        else{
+            return res.status(500).json({ msg: 'could not update details' });
+        }
+
     } catch (err) {
         console.error(err.message);
-        return res.status(500).json({ msg: 'Internal Server Error' });
+        return res.status(500).json({ msg: 'Server Error occured' });
     }
 })
 const cretatejob=asyncHandler(async(req,res)=>{
     const { userid ,position,jobTitle,jobType,location,salary,vacancies,experience,desc,requirements} = req.body; 
     console.log(userid);
     try {
-        const recruiterone = await recruiter.findById( userid); 
+        const recruiterone = await Jobs.findById( userid); 
 
         if (!recruiterone) {
             return res.status(404).json({ error: 'Recruiter not found' });

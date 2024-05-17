@@ -11,8 +11,8 @@ const app=express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
-
 dotenv.config();
+
 const port=process.env.PORT || 8000;
 const DATABASE_URL=process.env.MONGODB_URI;
 

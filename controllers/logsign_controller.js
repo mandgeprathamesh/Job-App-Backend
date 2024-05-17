@@ -1,13 +1,13 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import user from '../models/user.js';
 import Recruiter from '../models/recruiter.js';
 import generateToken from "../utils/createtoken.js";
 import errorHandler from '../middlewares/errorhandler.js';
+import asyncHandler from '../middlewares/asyncHandler.js';
 
-const signup = async (req, res,next) => {
+const signup = asyncHandler(async (req, res,next) => {
     const {username, email, password,role} = req.body;
-    console.log(req.body);
+    // console.log(req.body);
     if (!username || !email || !password || !role) {
         next(errorHandler(400, 'All fields are required'));
         return;
@@ -32,7 +32,7 @@ const signup = async (req, res,next) => {
             });
 
             await newCandidate.save();
-            res.json({msg: 'candidate added successfully'});
+            res.json({msg: 'candidate added successfully Proceed further for Login Process'});
         }
         else{
             const recruiter = await Recruiter.findOne({email});
@@ -51,24 +51,25 @@ const signup = async (req, res,next) => {
             res.json({msg: 'recruiter added successfully'});
         }
         
-    } catch (error) {
+    }  catch (error) {
         next(error);
         return;
     }
-}
-
+});
 
 const login = async (req, res, next) => {
     const {email, password} = req.body;
+    console.log(email,password);
     if (!email || !password) {
         next(errorHandler(400, 'All fields are required'));
     }
     try {
             const candidate = await user.findOne({email});
+            // console.log(candidate);
             if(candidate){
-                const validPassword = bcrypt.compareSync(password, candidate.password);
+                const validPassword = bcrypt.compare(password, candidate.password);
                 if (!validPassword) {
-                    next(errorhandler(400, 'Invalid password'));
+                    next(errorHandler(400, 'Invalid password'));
                     return;
                 }
                 const candidateid = candidate._id;
@@ -80,12 +81,14 @@ const login = async (req, res, next) => {
             }
 
             const recruiter = await Recruiter.findOne({email});
+            // console.log(recruiter);
             if (!recruiter) {
                 next(errorHandler(400, 'Invalid credentials'));
                 return;
             }
             else{
-                const validPassword = bcrypt.compareSync(password, recruiter.password);
+                const validPassword = bcrypt.compare(password,recruiter.password);
+                // console.log(validPassword);
                 if (!validPassword) {
                     next(errorHandler(400, 'Invalid passord'));
                     return;

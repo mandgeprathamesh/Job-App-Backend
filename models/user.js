@@ -46,20 +46,40 @@ const UserSchema = new Schema({
     skills: {
         type: [String],
     },
-    experience: {
-        type: String,
-    },
+    experience:[ 
+        {
+            title:{
+                type:String
+            },
+            company:{
+                type:String 
+            },
+            duration:{
+                type:String 
+            }
+        },
+    ],
     dob: {
         type: String,
     },
-    education: {
-        type: String,
-    },
+    education:[ 
+        {
+            degree:{
+                type:String
+            },
+            university:{
+                type:String 
+            },
+            year:{
+                type:String 
+            }
+        },
+    ],
     applied: [{ type: Schema.Types.ObjectId, ref: "Jobs" }],
 },
     {
         timestamps: true
     }
 );
-
-export default mongoose.model('User', UserSchema);
+const User= mongoose.model('User', UserSchema);
+export default User;
